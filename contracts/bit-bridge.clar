@@ -145,3 +145,35 @@
     (ok (map-set oracle-operators operator authorized))
   )
 )
+
+(define-public (update-price
+    (asset (string-ascii 10))
+    (price uint)
+    (confidence uint)
+  )
+  (begin
+    (asserts! (default-to false (map-get? oracle-operators tx-sender))
+      ERR-NOT-AUTHORIZED
+    )
+    (asserts! (> price u0) ERR-INVALID-AMOUNT)
+    (asserts! (and (>= confidence u1) (<= confidence u100)) ERR-INVALID-AMOUNT)
+    (asserts! (> (len asset) u0) ERR-INVALID-AMOUNT)
+    (ok (map-set price-feeds { asset: asset } {
+      price: price,
+      timestamp: stacks-block-height,
+      confidence: confidence,
+    }))
+  )
+)
+
+(define-read-only (get-price (asset (string-ascii 10)))
+  (let ((price-data (map-get? price-feeds { asset: asset })))
+    (match price-data
+      feed (if (< (- stacks-block-height (get timestamp feed)) MAX-PRICE-AGE)
+        (ok (get price feed))
+        ERR-ORACLE-PRICE-STALE
+      )
+      ERR-ORACLE-PRICE-STALE
+    )
+  )
+)
