@@ -96,3 +96,52 @@
 (define-read-only (get-name)
   (ok (var-get token-name))
 )
+
+(define-read-only (get-symbol)
+  (ok (var-get token-symbol))
+)
+
+(define-read-only (get-decimals)
+  (ok (var-get token-decimals))
+)
+
+(define-read-only (get-balance (who principal))
+  (ok (ft-get-balance usdx who))
+)
+
+(define-read-only (get-total-supply)
+  (ok (ft-get-supply usdx))
+)
+
+(define-read-only (get-token-uri)
+  (ok (var-get token-uri))
+)
+
+(define-public (transfer
+    (amount uint)
+    (from principal)
+    (to principal)
+    (memo (optional (buff 34)))
+  )
+  (begin
+    (asserts! (> amount u0) ERR-INVALID-AMOUNT)
+    (asserts! (or (is-eq from tx-sender) (is-eq from contract-caller))
+      ERR-NOT-AUTHORIZED
+    )
+    (asserts! (not (is-eq from to)) ERR-INVALID-AMOUNT)
+    (ft-transfer? usdx amount from to)
+  )
+)
+
+;; ORACLE FUNCTIONS
+
+(define-public (set-oracle-operator
+    (operator principal)
+    (authorized bool)
+  )
+  (begin
+    (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
+    (asserts! (not (is-eq operator tx-sender)) ERR-INVALID-AMOUNT) ;; Prevent self-modification
+    (ok (map-set oracle-operators operator authorized))
+  )
+)
